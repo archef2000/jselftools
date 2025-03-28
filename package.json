@@ -1,0 +1,34 @@
+{
+  "name": "jselftools",
+  "version": "0.2.0",
+  "description": "tool for parsing elf files",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "echo 'no tests'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/archef2000/jselftools.git"
+  },
+  "keywords": [
+    "elf",
+    "parser"
+  ],
+  "author": "archef2000",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/archef2000/jselftools/issues"
+  },
+  "homepage": "https://github.com/archef2000/jselftools#readme",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2"
+  }
+}
