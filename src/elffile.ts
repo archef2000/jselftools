@@ -191,7 +191,7 @@ export class ElfBody {
         return programs;
     }
 
-    sliceChunks(offset: number, count: number, size: number) {
+    sliceChunks(offset: number, count: number, size: number): DataView[] {
         var start = offset;
         var end = start + count * size;
         if (end > this.data.byteLength) {
