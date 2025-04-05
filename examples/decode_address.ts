@@ -8,10 +8,8 @@ const address = 0x4200e8c6;
 var start = Date.now();
 const elffile = new ELFFile(elfData.buffer);
 for (const section of elffile.body.sections) {
-    //console.log("name: " + section.name +" size: "+ section.size + section.type);
     if (section.type == "symtab") {
         console.log("symtab: " + section.name);
-        //var symtab = section;
         var symtab_offset = Number(section.off);
         var symtab_size = Number(section.size);
         var symtab_entry_size = Number(section.entsize);
