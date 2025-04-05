@@ -1,3 +1,4 @@
+import { ElfHeader } from './elffile';
 import { readULEB128, readSLEB128, readCString } from './helpers';
 
 export default class DWARFStructs {
@@ -173,4 +174,37 @@ export default class DWARFStructs {
     }
 
 
+}
+
+export class ELFStructs {
+    isLE: boolean;
+    is32: boolean;
+
+    constructor(elfHeader: ElfHeader) {
+        this.isLE = elfHeader.isLE;
+        this.is32 = elfHeader.class == "32";
+    }
+
+    read_word(data: DataView, offset: number): [number, number] {
+        return [data.getUint32(offset, this.isLE), offset+4];
+    }
+
+    read_half(data: DataView, offset: number): [number, number] {
+        return [data.getUint16(offset, this.isLE), offset+2];
+    }
+
+    read_sword(data: DataView, offset: number): [number, number] {
+        return [data.getInt32(offset, this.isLE), offset+2];
+    }
+
+    read_addr(data: DataView, offset: number): [BigInt|number, number] {
+        if (this.is32) {
+            return [data.getUint32(offset, this.isLE), offset+4];
+        } else {
+            return [data.getBigUint64(offset, this.isLE), offset+8];
+        }
+    }
+    read_offset(data: DataView, offset: number): [BigInt|number, number] {
+        return this.read_addr(data, offset);
+    }
 }

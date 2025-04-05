@@ -1,9 +1,11 @@
 import DWARFInfo from './dwarfinfo';
 import constants from "./elfconstants";
 import { readCString } from "./helpers";
+import { ELFStructs } from './structs';
+import { ENUM_ST_INFO_BIND, ENUM_ST_INFO_TYPE, ENUM_ST_SHNDX, ENUM_ST_VISIBILITY } from './enums';
 
 export default class ELFFile {
-    sections: {[key: string]: DataView} = {};
+    sections: { [key: string]: DataView } = {};
     little_endian: boolean = false;
     header: ElfHeader;
     body: ElfBody;
@@ -17,26 +19,35 @@ export default class ELFFile {
 
     resolveBody() {
         var strtab = this.body.sections[this.header.shstrndx];
-        if (strtab.type !== "strtab") {
-            throw new Error("Invalid strtab");
-        }
         for (const section of this.body.sections) {
             section.name = this.resolveStr(strtab, section.name_offset);
         }
     }
 
     resolveStr(strtab: ElfSection, offset: number): string {
+        if (strtab.type !== "strtab") {
+            throw new Error("Invalid strtab");
+        }
         return readCString(strtab.data, offset).value;
+    }
+
+    get_symtab(): ElfSymbolTableSection | undefined {
+        for (const section of this.body.sections) {
+            if (section.type == "symtab") {
+                return new ElfSymbolTableSection(section, this);
+            }
+        }
+        return undefined;
     }
 
     parse_sections() {
         for (const section of this.body.sections) {
-            this.sections[section.name.replace(".","")+"_sec"] = section.data;
+            this.sections[section.name.replace(".", "") + "_sec"] = section.data;
         }
         this.little_endian = this.header.isLE;
     }
 
-    has_dwarf_info(strict: boolean = false):boolean {
+    has_dwarf_info(strict: boolean = false): boolean {
         if (this.sections[".debug_info_sec"] || this.sections[".zdebug_info_sec"]) {
             return true;
         }
@@ -45,7 +56,7 @@ export default class ELFFile {
         }
         return false;
     }
-    
+
     get_dwarf_info() {
         return new DWARFInfo(this.sections, this.little_endian);
     }
@@ -154,6 +165,101 @@ export class ElfHeader {
     }
 }
 
+export class ElfSymbolTableSection {
+    section: ElfSection;
+    structs: ELFStructs;
+    elfFile: ELFFile;
+
+    constructor(section: ElfSection, elfFile: ELFFile) {
+        this.section = section;
+        this.structs = new ELFStructs(elfFile.header);
+        this.elfFile = elfFile;
+    }
+
+    num_symbols() {
+        return Number(this.section.size) / Number(this.section.entsize);
+    }
+
+    get_symbol(n: number) {
+        var offset = Number(this.section.off) + n * Number(this.section.entsize);
+        offset -= Number(this.section.off);
+        var strtab = this.elfFile.body.sections[this.section.link];
+        const strResolver = (offset: number) => {
+            return this.elfFile.resolveStr(strtab, offset)
+        };
+        return new ElfSymbol(this.section.data, offset, this.structs, strResolver);
+    }
+
+    *iter_symbols() {
+        for (let i = 0; i < this.num_symbols(); i++) {
+            yield this.get_symbol(i);
+        }
+    }
+}
+
+export type ST_INFO = { bind: string | number; type: string | number };
+export type ST_OTHER = { local: number; visibility: string | number };
+
+export class ElfSymbol {
+    offset: number;
+
+    name: string;
+    info: ST_INFO;
+    other: ST_OTHER;
+    shndx: number | string;
+    size: number;
+    value: number | BigInt;
+
+    constructor(data: DataView, offset: number, structs: ELFStructs, strResolver: (offset: number) => string) {
+        this.offset = offset;
+        if (structs.is32) {
+            var [name_offset, offset] = structs.read_word(data, offset);
+            this.name = strResolver(name_offset);
+            var [value, offset] = structs.read_addr(data, offset);
+            this.value = value;
+            var [size, offset] = structs.read_word(data, offset);
+            this.size = size;
+            this.info = this.parse_st_info(data, offset++);
+            this.other = this.parse_st_other(data, offset++);
+            var [st_shndx_number, offset] = structs.read_half(data, offset);
+            this.shndx = ENUM_ST_SHNDX[st_shndx_number] || st_shndx_number;
+        } else {
+            var [name_offset, offset] = structs.read_word(data, offset);
+            this.name = strResolver(name_offset);
+            this.info = this.parse_st_info(data, offset++);
+            this.other = this.parse_st_other(data, offset++);
+            var [st_shndx_number, offset] = structs.read_half(data, offset);
+            this.shndx = ENUM_ST_SHNDX[st_shndx_number] || st_shndx_number;
+            var [value, offset] = structs.read_addr(data, offset);
+            this.value = value;
+            var [size, offset] = structs.read_word(data, offset);
+            this.size = size;
+        }
+
+    }
+    private parse_st_info(data: DataView, offset: number): ST_INFO {
+        const byte = data.getUint8(offset);
+        const bind = (byte >> 4) & 0x0F;
+        const type = byte & 0x0F;
+
+        return {
+            bind: ENUM_ST_INFO_BIND[bind] || bind,
+            type: ENUM_ST_INFO_TYPE[type] || type,
+        };
+    }
+    private parse_st_other(data: DataView, offset: number): ST_OTHER {
+        const byte = data.getUint8(offset);
+        const localBits = (byte >> 5) & 0b111;
+        const visibilityBits = byte & 0b111;
+
+        return {
+            local: localBits,
+            visibility: ENUM_ST_VISIBILITY[visibilityBits] || visibilityBits,
+        };
+    }
+}
+
+
 export class ElfBody {
     data: DataView;
     programs: ElfProgram[];
@@ -206,9 +312,9 @@ export class ElfBody {
     }
 }
 
-function mapFlags(value: number|BigInt, map: { [key: number]: string }) {
+function mapFlags(value: number | BigInt, map: { [key: number]: string }) {
     value = Number(value);
-    var res: { [key: number|string ]: boolean } = {};
+    var res: { [key: number | string]: boolean } = {};
 
     for (var bit = 1; (value < 0 || bit <= value) && bit !== 0; bit <<= 1)
         if (value & bit)
@@ -221,7 +327,7 @@ export class ElfProgram {
     data: DataView;
     type: string;
     offset: number | BigInt;
-    flags: { [key: number|string ]: boolean };
+    flags: { [key: number | string]: boolean };
     vaddr: number | BigInt;
     paddr: number | BigInt;
     filesz: number | BigInt;
@@ -252,7 +358,7 @@ export class ElfProgram {
         }
         var { value: align, offset: bufferOffset } = header.readOffset(data, bufferOffset);
         this.align = align;
-        
+
         this.flags = mapFlags(flags, constants.entryFlags);
         this.data = new DataView(header.data.buffer, Number(this.offset), Number(this.filesz));
         //this.data = new DataView(header.data.buffer.slice(Number(this.offset), Number(this.offset) + Number(this.filesz)));
@@ -262,8 +368,8 @@ export class ElfProgram {
 export class ElfSection {
     name: string;
     name_offset: number;
-    type: number|string;
-    flags: { [key: number|string ]: boolean };
+    type: number | string;
+    flags: { [key: number | string]: boolean };
     addr: number | BigInt;
     off: number | BigInt;
     size: number | BigInt;

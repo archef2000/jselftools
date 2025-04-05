@@ -1,6 +1,6 @@
 import { constants } from './constants';
 import { readCString, readULEB128, readSLEB128 } from './helpers';
-import { ENUM_DW_LNCT, ENUM_DW_FORM } from './enums';
+import { ENUM_DW_LNCT, ENUM_DW_FORM } from './dwarf/enums';
 import DWARFStructs from './structs';
 
 export type DW_LNCT = typeof ENUM_DW_LNCT[keyof typeof ENUM_DW_LNCT];

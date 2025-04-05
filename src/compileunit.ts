@@ -1,5 +1,5 @@
 import Die from './die';
-import { ENUM_DW_TAG, ENUM_DW_AT, ENUM_DW_FORM, ENUM_DW_UT } from './enums';
+import { ENUM_DW_TAG, ENUM_DW_AT, ENUM_DW_FORM, ENUM_DW_UT } from './dwarf/enums';
 import DWARFInfo from './dwarfinfo';
 import { LineProgram } from './lineprogram';
 import DWARFStructs from './structs';

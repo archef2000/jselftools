@@ -1,7 +1,7 @@
 import { LineProgram, LineProgramHeader } from './lineprogram';
 import CompileUnit from './compileunit';
 import { readCString, readULEB128 } from './helpers';
-import { ENUM_DW_LNCT, ENUM_DW_FORM } from './enums';
+import { ENUM_DW_LNCT, ENUM_DW_FORM } from './dwarf/enums';
 import DWARFStructs from './structs';
 
 type FormatFieldType = "file_name_entry_format" | "directory_entry_format";
