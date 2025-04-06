@@ -48,10 +48,10 @@ export default class ELFFile {
     }
 
     has_dwarf_info(strict: boolean = false): boolean {
-        if (this.sections[".debug_info_sec"] || this.sections[".zdebug_info_sec"]) {
+        if (this.sections["debug_info_sec"] || this.sections["zdebug_info_sec"]) {
             return true;
         }
-        if (!strict && this.sections[".eh_frame_sec"]) {
+        if (!strict && this.sections["eh_frame_sec"]) {
             return true;
         }
         return false;
