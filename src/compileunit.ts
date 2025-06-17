@@ -10,7 +10,7 @@ export interface AbbrevTable { [key: number]: { tag: string | number, has_childr
 export default class CompileUnit {
     unit_length: number | BigInt;
     version: number;
-    dies: Die[] = []; // new Array(500); // 
+    dies: Die[] = [];
     dwarfinfo: DWARFInfo;
     offset: number;
     _line_program: LineProgram | null = null;
@@ -39,7 +39,7 @@ export default class CompileUnit {
             this.unit_length = data.getBigUint64(offset, dwarfinfo.little_endian);
             offset += 8;
         }
-        this.cu_end_offset = this.offset + Number(this.unit_length) + 4; // TODO: initial_length_field_size
+        this.cu_end_offset = this.offset + Number(this.unit_length) + this.dwarf_format == 32 ? 4 : 12;
         this.version = data.getUint16(offset, isLE);
         offset += 2;
         if (this.version >= 5) {
@@ -114,8 +114,8 @@ export default class CompileUnit {
                 name = ENUM_DW_AT[Number(name) as keyof typeof ENUM_DW_AT] || name;
                 form = ENUM_DW_FORM[Number(form) as keyof typeof ENUM_DW_FORM] || form;
                 if (form == "DW_FORM_implicit_const") {
-                    var [value, offset] = readULEB128(buffer, offset);
-                    attributes.push({ name, form, value });
+                    var [attr_value, offset] = readULEB128(buffer, offset);
+                    attributes.push({ name, form, value: attr_value });
                 } else {
                     attributes.push({ name, form });
                 }

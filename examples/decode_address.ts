@@ -1,5 +1,4 @@
-import ELFFile, { CompileUnit } from "../src";
-import { Die } from "../src";
+import ELFFile, { CompileUnit, Die } from "../src";
 import * as fs from 'fs';
 import { LineProgram } from "../src/lineprogram";
 

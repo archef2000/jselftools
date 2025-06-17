@@ -76,7 +76,7 @@ export default class Die {
             return this.dwarfinfo.supplementarydwarfinfo.get_string_fromtable(raw_value);
         */
         } else if (form == 'DW_FROM_flag') {
-            return !(raw_value == 0);
+            return raw_value !== 0;
         } else if (form == 'DW_FORM_flag_present') {
             return true;
         }

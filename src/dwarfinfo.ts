@@ -28,7 +28,6 @@ export default class DWARFInfo {
     }
 
     get_CU_at_offset(offset: number) {
-        // TODO: implement
         return new CompileUnit(this, offset);
     }
 
@@ -62,7 +61,6 @@ export default class DWARFInfo {
     }
 
     _parse_line_program_at_offset(offset: number, structs: DWARFStructs) {
-        const line_str = this.sections.debug_line_sec;
         var { lineprog_header, offset: program_start_offset } = this.parse_line_header(offset, structs);
         this.resolve_strings(lineprog_header, 'directory_entry_format', 'directories');
         this.resolve_strings(lineprog_header, 'file_name_entry_format', 'file_names');
@@ -78,7 +76,7 @@ export default class DWARFInfo {
             }));
         }
 
-        const initial_length_field_size = 4 // if self.dwarf_format == 32 else 12
+        const initial_length_field_size = structs.dwarf_format == 32 ? 4 : 12;
         const program_end_offset = (offset + lineprog_header['unit_length'] + initial_length_field_size);
         return new LineProgram(lineprog_header, program_start_offset, program_end_offset, this.sections.debug_line_sec, structs);
     }

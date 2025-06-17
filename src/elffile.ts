@@ -306,7 +306,6 @@ export class ElfBody {
         var chunks = [];
         for (var off = start; off < end; off += size) {
             chunks.push(new DataView(this.data.buffer, off, size));
-            //chunks.push(new DataView(this.data.buffer.slice(off, off + size)));
         }
         return chunks;
     }
@@ -361,7 +360,6 @@ export class ElfProgram {
 
         this.flags = mapFlags(flags, constants.entryFlags);
         this.data = new DataView(header.data.buffer, Number(this.offset), Number(this.filesz));
-        //this.data = new DataView(header.data.buffer.slice(Number(this.offset), Number(this.offset) + Number(this.filesz)));
     }
 }
 
@@ -402,6 +400,5 @@ export class ElfSection {
         var { value: entsize, offset: bufferOffset } = header.readOffset(data, bufferOffset);
         this.entsize = entsize;
         this.data = new DataView(header.data.buffer, Number(this.off), Number(this.size));
-        //this.data = new DataView(header.data.buffer.slice(Number(this.off), Number(this.off) + Number(this.size)));
     }
 }

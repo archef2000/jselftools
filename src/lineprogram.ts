@@ -90,7 +90,6 @@ export class LineProgram {
   }
 
   get_entries() {
-    //return this._decode_line_program();
     if (this.entries.length == 0) {
       this.entries = this._decode_line_program();
     }
